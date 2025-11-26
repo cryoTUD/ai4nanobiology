@@ -1,0 +1,15 @@
+name: ai4bio
+channels:
+  - conda-forge
+  - defaults
+  - nvidia
+dependencies:
+  - python=3.11
+  - numpy
+  - matplotlib
+  - pandas
+  - scikit-learn
+  - seaborn
+  - torch
+  - torchvision
+  
