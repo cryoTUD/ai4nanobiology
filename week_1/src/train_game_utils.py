@@ -7,6 +7,21 @@ def load_model_from_path(model_path):
     model.load_state_dict(torch.load(model_path, map_location=device))
     return model
 
+def save_model(model, model_name, save_folder="src/models/retrained_models/"):
+    import torch 
+    import os 
+    os.makedirs(save_folder, exist_ok=True)
+    if model_name.endswith(".pt"):
+        new_model_name = model_name
+    else:
+        new_model_name = model_name + ".pt"
+
+    model_path = os.path.join(save_folder, new_model_name)
+    if os.path.exists(model_path):
+        print(f"Model with name {new_model_name} already exists. Overwriting.")
+    torch.save(model.state_dict(), model_path)
+    return model_path
+
 def define_model(reproducible=False):
     import torch
     import torch.nn as nn
@@ -42,10 +57,11 @@ def define_model(reproducible=False):
     model = LegalMovesModel().to(device)
     return model
 
-def train_model(model, x_input_list, y_output_list, num_epochs, batch_size=32, lr=0.001, weight_decay=1e-5):
+def train_model(model, x_input_list, y_output_list, num_epochs, batch_size=32, lr=0.001, weight_decay=1e-5, verbose="low"):
     import torch
     import torch.nn as nn   
     from torch.utils.data import TensorDataset, DataLoader
+    from tqdm import tqdm
     # set random seed for reproducibility
     torch.manual_seed(42)
     torch.cuda.manual_seed(42)
@@ -68,6 +84,9 @@ def train_model(model, x_input_list, y_output_list, num_epochs, batch_size=32, l
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)    
 
     # Training loop
+    if verbose == "low":
+        progress_bar = tqdm(range(num_epochs), desc="Training in progress")
+
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0
@@ -88,8 +107,14 @@ def train_model(model, x_input_list, y_output_list, num_epochs, batch_size=32, l
                 val_loss = criterion(outputs, labels)
                 running_val_loss += val_loss.item() * inputs.size(0)
         epoch_val_loss = running_val_loss / len(val_dataset)
+        if verbose == "low":
+            # update progress bar just show show percentage progress
+            progress_bar.update(1)
+        elif verbose == "detail":
+            print(f"Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Val Loss: {epoch_val_loss:.4f}")
+        else:
+            pass
 
-        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Val Loss: {epoch_val_loss:.4f}")
     return model
 
 def generate_data_from_user_input(n_games=15, username="username", opponent="random"):
@@ -120,7 +145,39 @@ def generate_data_from_user_input(n_games=15, username="username", opponent="ran
         game_data[f"game_{i+1}"] = data_to_use
     return game_data
 
-        
+def retrain_using_generated_data(generated_data, strategy="train_alice"):
+    '''
+    Retrain the model using the generated data.
+    strategy: "fresh_start" or "train_alice" or "train_bob" or path_to_model.pt
+    '''
+    import os 
+    from src.train_game_utils import load_model_from_path, train_model, define_model
+
+    # From the generated data, split into X and Y 
+    X_input = []
+    Y_output = []
+
+    for game in generated_data.keys():
+        user_input = generated_data[game]
+        for move in user_input:
+            X_input.append(move[0])
+            Y_output.append(move[1])
+
+    if strategy == "train_alice":
+        model = load_model_from_path("src/models/Alice.pt")
+    elif strategy == "train_bob":
+        model = load_model_from_path("src/models/Bob.pt")
+    elif strategy == "fresh_start":
+        model = define_model()
+    elif strategy.endswith(".pt"):
+        model = load_model_from_path(strategy)
+    else:
+        raise ValueError("Invalid strategy. Choose from 'fresh_start', 'train_alice', 'train_bob', or provide a path to a .pt model file.")
+    
+    # Train the model on the generated data
+    retrained = train_model(model, X_input, Y_output, num_epochs=100, verbose="low")
+
+    return retrained
 
 
 
