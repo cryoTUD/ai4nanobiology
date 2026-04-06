@@ -92,5 +92,41 @@ def train_model(model, x_input_list, y_output_list, num_epochs, batch_size=32, l
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Val Loss: {epoch_val_loss:.4f}")
     return model
 
+def generate_data_from_user_input(n_games=15, username="username", opponent="random"):
+    from .game_utils import User_vs_Computer
+    import random
+    from IPython.display import clear_output
+    from time import sleep
+    # generate training data from user input from n_games games
+    game_data = {}
+    player_1 = username
+    player_2_name = random.choice(["Alice", "Bob"]) if opponent == "random" else opponent
+    for i, _ in enumerate(range(n_games)):
+        data_to_use = []
+        result = User_vs_Computer(username, player_2_name)
+        user_inputs = result["all_user_inputs"]
+        for move in user_inputs[1:]: # skip the first move since it is always the same
+            game_state = move[0]
+            current_player = move[1]
+            move_made = move[2]
+            if current_player == 1:
+                x_input = game_state
+                y_output = move_made
+                data_to_use.append((x_input, y_output))
+        
+        sleep(2)
+        clear_output(wait=True)
+        
+        game_data[f"game_{i+1}"] = data_to_use
+    return game_data
 
+        
+
+
+
+
+        
+        
+
+    
 
