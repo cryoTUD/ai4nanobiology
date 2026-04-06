@@ -1,7 +1,19 @@
 import numpy as np
-def define_model():
+
+def load_model_from_path(model_path):
+    import torch 
+    device = torch.device("cpu")
+    model = define_model().to(device)
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    return model
+
+def define_model(reproducible=False):
     import torch
     import torch.nn as nn
+    # set random seed for reproducibility
+    if reproducible:
+        torch.manual_seed(42)
+        torch.cuda.manual_seed(42)
 
     device = torch.device("cpu")
 
@@ -30,25 +42,22 @@ def define_model():
     model = LegalMovesModel().to(device)
     return model
 
-def train_model(model, criterion, optimizer, num_epochs, list_of_next_moves, batch_size):
+def train_model(model, x_input_list, y_output_list, num_epochs, batch_size=32, lr=0.001, weight_decay=1e-5):
     import torch
+    import torch.nn as nn   
+    from torch.utils.data import TensorDataset, DataLoader
+    # set random seed for reproducibility
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    device = torch.device("cpu")
     # Create training data generator
-    x_input_list = []
-    y_output_list = []
-    for game in list_of_next_moves:
-        for step in game:
-            x_input = step[0]
-            y_output = step[1]
-            x_input_list.append(x_input)
-            y_output_list.append(y_output)
-
-
     x_input_tensor = torch.tensor(np.array(x_input_list), dtype=torch.float32).to(device)
     y_output_tensor = torch.tensor(np.array(y_output_list), dtype=torch.long).to(device)
 
-
-    # create dataset and dataloader
-    from torch.utils.data import TensorDataset, DataLoader
+    # create dataset and dataloader    
     dataset = TensorDataset(x_input_tensor, y_output_tensor)
 
     # split data into training and validation sets
