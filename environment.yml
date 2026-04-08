@@ -12,4 +12,13 @@ dependencies:
   - seaborn
   - pytorch
   - torchvision
+  - pip
+  - pip:
+      - ipykernel
+      - huggingface_hub
+      - pyarrow
+      - transformers
+      - datasets
+      
+
   
