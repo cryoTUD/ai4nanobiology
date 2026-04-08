@@ -1,2 +1,3 @@
 *.pyc
 week_1/src/models/retrained_models/*
+week_6/try_gpt2.py
