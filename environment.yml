@@ -15,6 +15,7 @@ dependencies:
   - pip
   - pip:
       - ipykernel
+      - ipywidgets
       - huggingface_hub
       - pyarrow
       - transformers
