@@ -7,7 +7,7 @@ dependencies:
   - python=3.11
   - numpy
   - matplotlib
-  - pandas
+  - pandas=2.3.3
   - scikit-learn
   - seaborn
   - pytorch
