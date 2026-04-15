@@ -118,7 +118,7 @@ def train_model(model, x_input_list, y_output_list, num_epochs, batch_size=32, l
     return model
 
 def generate_data_from_user_input(n_games=15, username="username", opponent="random"):
-    from .game_utils import User_vs_Computer
+    from .game_utils import user_vs_model
     import random
     from IPython.display import clear_output
     from time import sleep
@@ -128,7 +128,7 @@ def generate_data_from_user_input(n_games=15, username="username", opponent="ran
     player_2_name = random.choice(["Alice", "Bob"]) if opponent == "random" else opponent
     for i, _ in enumerate(range(n_games)):
         data_to_use = []
-        result = User_vs_Computer(username, player_2_name)
+        result = user_vs_model(username, player_2_name)
         user_inputs = result["all_user_inputs"]
         for move in user_inputs[1:]: # skip the first move since it is always the same
             game_state = move[0]
