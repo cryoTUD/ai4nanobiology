@@ -352,6 +352,8 @@ def user_vs_model(userName, opponent):
         player_2 = "src/models/Alice.pt"
     elif opponent == "Bob":
         player_2 = "src/models/Bob.pt"
+    elif opponent == "Expert":
+        player_2 = "src/models/Expert.pt"
     player_1_name = userName # by default it is "Player 1 [X]"
     player_2_name = opponent 
     game = TicTacToeGame(

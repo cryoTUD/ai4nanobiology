@@ -125,7 +125,7 @@ def generate_data_from_user_input(n_games=15, username="username", opponent="ran
     # generate training data from user input from n_games games
     game_data = {}
     player_1 = username
-    player_2_name = random.choice(["Alice", "Bob"]) if opponent == "random" else opponent
+    player_2_name = random.choice(["Alice", "Bob", "Expert"]) if opponent == "random" else opponent
     for i, _ in enumerate(range(n_games)):
         data_to_use = []
         result = user_vs_model(username, player_2_name)
