@@ -221,3 +221,64 @@ def print_summary_of_network(**layers):
     df["Output"] = df["Output"].apply(lambda x: np.round(x, 2) if isinstance(x, np.ndarray) else x)
     
     print(df)
+
+
+## Util functions for module 3
+def define_model(num_neurons, num_depth):
+    import torch
+    import torch.nn as nn
+    layers = []
+    input_size = 1
+    for _ in range(num_depth):
+        layers.append(nn.Linear(input_size, num_neurons))
+        layers.append(nn.ReLU())
+        input_size = num_neurons
+    layers.append(nn.Linear(input_size, 1))
+    model = nn.Sequential(*layers)
+    return model
+def preprocess_data(x):
+    import torch
+    x_tensor_1 = torch.tensor(x, dtype=torch.float32).unsqueeze(1)
+    # standardize the data
+    x_mean = x_tensor_1.mean()
+    x_std = x_tensor_1.std()
+    x_tensor = (x_tensor_1 - x_mean) / x_std
+    return x_tensor, x_mean.detach().numpy(), x_std.detach().numpy()
+
+def train_model(model, x_train, y_train, num_epochs=1000, learning_rate=0.001):
+    import torch
+    import torch.nn as nn
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    for epoch in range(num_epochs):
+        model.train()
+        optimizer.zero_grad()
+        outputs = model(x_train)
+        loss = criterion(outputs, y_train)
+        loss.backward()
+        optimizer.step()
+    
+    return model
+def evaluate_model(model, x_eval):
+    import torch
+    x_eval_tensor = torch.tensor(x_eval, dtype=torch.float32).unsqueeze(1)
+    y_pred = model(x_eval_tensor).detach().numpy().flatten()
+    return y_pred 
+
+def train_multiple_times(model, x_train, y_train, x_test, n_runs=15):
+    # preprocess the training data
+    x_train_tensor, x_sample_mean, x_sample_std = preprocess_data(x_train)
+    y_train_tensor, y_sample_mean, y_sample_std = preprocess_data(y_train)
+    all_predictions = []
+    for run in range(n_runs):
+        # Re-initialize the model weights
+        model.apply(lambda m: m.reset_parameters() if hasattr(m, 'reset_parameters') else None)
+        # Train the model
+        trained_model = train_model(model, x_train_tensor, y_train_tensor)
+        # Get predictions
+        x_test_standardized = (x_test - x_sample_mean) / x_sample_std
+
+        predictions = evaluate_model(trained_model, x_test_standardized)
+        all_predictions.append(predictions * y_sample_std + y_sample_mean)
+    return np.array(all_predictions)
+    
