@@ -1,4 +1,5 @@
 import os 
+import numpy as np
 import dropbox
 
 def upload_file_to_dropbox(filepath):
@@ -12,3 +13,154 @@ def upload_file_to_dropbox(filepath):
             mode=dropbox.files.WriteMode.overwrite  # overwrite if exists
         )
     print(f"Uploaded: {filepath} → {dropboxpath}")
+
+## Util functions for module 2
+def degree_3_polynomial(x, coeffs, noise_std=0):
+    A, B, C, D = coeffs
+    return A + B*x + C*x**2 + D*x**3 + np.random.normal(0, noise_std, size=x.shape)
+
+def activation_function(z, function_type="sigmoid"):
+    if function_type == "sigmoid":
+        return 1 / (1 + np.exp(-z))
+    elif function_type == "relu":
+        return np.maximum(0, z)
+    elif function_type == "tanh":
+        return np.tanh(z)
+    elif function_type == "linear":
+        return z
+    else:
+        raise ValueError("Unsupported activation function.")
+
+
+def update_neuron_output_using_activation_point(slope, function_type, activation_point, x):
+    # Plot the output
+    from netgraph import Graph
+    import matplotlib.pyplot as plt
+    x_global = np.linspace(-10, 10, 400)
+    # calculate bias from activation point
+    bias = -slope * activation_point
+    z = slope * x_global + bias
+    y_global = activation_function(z, function_type=function_type)
+    fig, (ax, ax1) = plt.subplots(1, 2, figsize=(12, 3))
+    # set ax to 3,3 
+    ax.plot(x_global, y_global, label=f"Output")
+    ax.set_xlabel('Input (x)')
+    ax.set_ylabel('Output (y)')
+    ax.set_xlim(-10, 10)
+    #plt.xticks(np.arange(-4, 11, 4))
+    if function_type in ["relu"]:
+        y_min = -2.5
+    elif function_type in ["tanh"]:
+        y_min = -1.2
+    else:
+        y_min = -0.2
+    y_max = 1.2 if function_type in ["sigmoid", "tanh"] else 10
+    ax.set_ylim(y_min, y_max)
+    # vertical line at activation point until it hits the bias value
+      # plot the neuron graph
+    weight = slope
+    z = weight * x + bias
+    output = activation_function(z, function_type=function_type)
+    ax.axvline(x=x, color="gray", linestyle='--', label=f"Input x={x:.2f}")
+
+    ax.legend(fontsize=8, bbox_to_anchor=(1.4, 1))
+    ax.set_title(f"Slope={slope:.2f}, Bias={bias:.2f}")
+
+    ax1.set_aspect(0.5)
+    g = Graph(
+        [('x', 'out')],
+        node_labels={'x': f'x={x:.1f}', 'out': f'out={output:.1f}'},
+        edge_width={('x', 'out'): abs(weight) * 1},
+        edge_labels={('x', 'out'): f'w={weight:.1f}'},
+        node_layout={'x': (0.1, 0.5), 'out': (0.9, 0.5)},
+        node_size=10,
+        arrows=True,
+        ax=ax1,
+    )
+    # Set font sizes directly on the artists
+    for artist in g.node_label_artists.values():
+        artist.set_fontsize(12)
+    for artist in g.edge_label_artists.values():
+        artist.set_fontsize(12)
+    # Bias as text below neuron node — get the neuron position in display coords
+    ax1.text(0.5, 0.3, f'b={bias:.2f}', ha='center', va='top',
+             fontsize=12, color='#E67E22', transform=ax1.transData)
+    #ax1.set_xlim(0, 1)
+
+    fig.tight_layout()
+
+
+def update_layer_of_neurons_using_slope_activation_point(\
+    slope_1, slope_2, slope_3, \
+    activation_point_1, activation_point_2, activation_point_3, \
+    weight_1, weight_2, weight_3, \
+    output_bias, function_type, sample_data):
+
+    import matplotlib.pyplot as plt
+    x_sample, y_sample, y_true = sample_data
+    # calculate bias from activation points for each neuron
+    bias_1 = -slope_1 * activation_point_1
+    bias_2 = -slope_2 * activation_point_2
+    bias_3 = -slope_3 * activation_point_3
+    # combined output
+    x_global = np.linspace(-10, 10, 1000)
+    z_1_global = slope_1 * x_global + bias_1
+    z_2_global = slope_2 * x_global + bias_2
+    z_3_global = slope_3 * x_global + bias_3
+    y_1_global = activation_function(z_1_global, function_type=function_type)
+    y_2_global = activation_function(z_2_global, function_type=function_type)
+    y_3_global = activation_function(z_3_global, function_type=function_type)
+
+    combined_output = weight_1 * y_1_global + weight_2 * y_2_global + weight_3 * y_3_global + output_bias
+    x_global_true = np.linspace(0, 1, 1000)
+    y_1_global_true = activation_function(slope_1 * x_global_true + bias_1, function_type=function_type)
+    y_2_global_true = activation_function(slope_2 * x_global_true + bias_2, function_type=function_type)
+    y_3_global_true = activation_function(slope_3 * x_global_true + bias_3, function_type=function_type)
+    combined_output_true = weight_1 * y_1_global_true + weight_2 * y_2_global_true + weight_3 * y_3_global_true + output_bias
+
+    fig, ax = plt.subplots(1, 4, figsize=(10, 3))
+    ax[0].plot(x_global, y_1_global, label=f"Neuron 1 Output")
+    ax[0].set_title(f"Neuron 1")
+    ax[0].set_xlabel('Input (x)')
+    ax[0].set_ylabel('Output (y)')
+    #ax[0].legend()
+    ax[0].set_xlim(-5, 10)
+    #ax[0].set_xticks(np.arange(-4, 11, 4))
+    ax[0].set_ylim(-5, 10)
+    #ax[0].set_yticks(np.arange(-5, 11, 5))
+    ax[1].plot(x_global, y_2_global, label=f"Neuron 2 Output")
+    ax[1].set_title(f"Neuron 2")
+    ax[1].set_xlabel('Input (x)')
+    # hide y axis for ax[1]
+    ax[1].set_ylim(-5, 10)
+    ax[1].set_yticks([])
+    #ax[1].legend()
+    ax[1].set_xlim(-5, 10)
+    #ax[1].set_xticks(np.arange(-4, 11, 4))
+    ax[2].plot(x_global, y_3_global, label=f"Neuron 3 Output")
+    ax[2].set_title(f"Neuron 3")
+    ax[2].set_xlabel('Input (x)')
+    # hide y axis for ax[2]
+    ax[2].set_ylim(-5, 10)
+    ax[2].set_yticks([])
+    #ax[2].legend()
+    ax[2].set_xlim(-5, 10)
+    #ax[2].set_xticks(np.arange(-4, 11, 4))
+    ax[3].plot(x_global, combined_output, label=f"Combined Output")
+    #ax[3].plot(x_true, y_true, color="black", label="True Function", linestyle='--', linewidth=2)
+    ax[3].plot(x_sample, y_sample, color="red", label="Sampled Data", linestyle='None', marker='o')
+    ax[3].set_title(f"Combined Output")
+    ax[3].set_xlabel('Input (x)')
+    # hide y axis for ax[3]
+    ax[3].set_ylim(0, 10)
+    ax[3].set_yticks([0, 5, 10])
+    # legend outside the plot
+    ax[3].legend(loc='upper left', bbox_to_anchor=(1.2, 1))
+    ax[3].set_xlim(0, 10)
+    #ax[3].set_xticks(np.arange(0, 11, 2))
+
+    # compute mean squared error between combined output and true function at the sampled points
+    
+    mean_squared_error = np.mean((combined_output_true - y_true)**2)
+    plt.suptitle(f"Mean Squared Error: {mean_squared_error:.2f}")
+    plt.tight_layout()
