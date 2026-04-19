@@ -87,7 +87,7 @@ def update_neuron_output_using_activation_point(slope, function_type, activation
              fontsize=12, color='#E67E22', transform=ax1.transData)
     #ax1.set_xlim(0, 1)
 
-    fig.tight_layout()
+    fig.tight_layout();
 
 
 def update_layer_of_neurons_using_slope_activation_point(\
@@ -164,3 +164,60 @@ def update_layer_of_neurons_using_slope_activation_point(\
     mean_squared_error = np.mean((combined_output_true - y_true)**2)
     plt.suptitle(f"Mean Squared Error: {mean_squared_error:.2f}")
     plt.tight_layout()
+
+
+def plot_loss_landscape_with_state(loss_fn, output_vector, states=None, window_size=10, tangent=None, \
+                                   show_legend=True, figsize=(5,3)):
+    import matplotlib.pyplot as plt 
+    import matplotlib.cm as cm 
+    # ignore warnings
+    import warnings
+    warnings.filterwarnings("ignore")
+
+    y_pred_around_output = np.linspace(output_vector-window_size, output_vector+window_size, 1000)
+    loss_values = [loss_fn(output_vector, y_pred) for y_pred in y_pred_around_output]
+    plt.figure(figsize=figsize)
+    plt.plot(y_pred_around_output, loss_values)
+    plt.xlabel("Predicted values")
+    plt.ylabel("Loss")
+
+    # Add points
+    if states is not None:
+        colors = cm.get_cmap('viridis', len(states))
+        for i, state in enumerate(list(states.values())):
+            plt.scatter(state['prediction'], state['loss'], label=state['condition'], color=colors(i))
+
+    if tangent is not None:
+        # tangent = slope
+        tangent_line = tangent['slope'] * y_pred_around_output + (tangent['loss'] - tangent['slope'] * tangent['prediction'])
+        plt.plot(y_pred_around_output, tangent_line, color="gray", \
+                 linestyle="--", label=r'$\delta_{out}$' + '={:.2f}'.format(tangent['slope']))
+    
+    min_values_to_plot = min(loss_values)*0.9 - 0.1 * (max(loss_values) - min(loss_values))
+    max_values_to_plot = max(loss_values)*1.1 + 0.1 * (max(loss_values) - min(loss_values))
+    plt.ylim(min_values_to_plot, max_values_to_plot)
+    if show_legend:
+        plt.legend()
+        
+
+def print_summary_of_network(**layers):
+    import pandas as pd
+    df = pd.DataFrame(columns=["Layer", "Neuron", "Weights", "Bias", "Activation Function", "Input Vector", "Output"])
+    for layer_name, layer in layers.items():
+        df_layer = pd.DataFrame(columns=["Layer", "Neuron", "Weights", "Bias", "Activation Function", "Input Vector", "Output"])
+        df_layer["Layer"] = [layer_name] * len(layer.neurons)
+        df_layer["Neuron"] = [f"Neuron {i+1}" for i in range(len(layer.neurons))]
+        df_layer["Weights"] = [neuron.weights for neuron in layer.neurons]
+        df_layer["Bias"] = [neuron.bias for neuron in layer.neurons]
+        df_layer["Activation Function"] = [neuron.function_type for neuron in layer.neurons]
+        df_layer["Input Vector"] = [neuron.input_vector for neuron in layer.neurons]
+        df_layer["Output"] = [neuron.forward() for neuron in layer.neurons]
+        df = pd.concat([df, df_layer], ignore_index=True)
+    
+    # round the weights, bias, input vector and output to 2 decimal places for better display
+    df["Weights"] = df["Weights"].apply(lambda x: np.round(x, 2) if isinstance(x, np.ndarray) else x)
+    df["Bias"] = df["Bias"].apply(lambda x: np.round(x, 2) if isinstance(x, np.ndarray) else x)
+    df["Input Vector"] = df["Input Vector"].apply(lambda x: np.round(x, 2) if isinstance(x, np.ndarray) else x)
+    df["Output"] = df["Output"].apply(lambda x: np.round(x, 2) if isinstance(x, np.ndarray) else x)
+    
+    print(df)
