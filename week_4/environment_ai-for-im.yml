@@ -1,0 +1,13 @@
+name: ai_for_im
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - pytorch
+  - jupyter
