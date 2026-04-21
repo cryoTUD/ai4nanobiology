@@ -1,6 +1,5 @@
 import os 
 import numpy as np
-import dropbox
 
 
 def upload_to_surfdrive(file_path, student_id):
