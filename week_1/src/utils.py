@@ -178,7 +178,7 @@ def update_layer_of_neurons_using_slope_activation_point(\
     ax[3].set_ylim(0, 10)
     ax[3].set_yticks([0, 5, 10])
     # legend outside the plot
-    ax[3].legend(loc='upper left', bbox_to_anchor=(1.2, 1))
+    #ax[3].legend(loc='upper left', bbox_to_anchor=(1.2, 1))
     ax[3].set_xlim(0, 10)
     #ax[3].set_xticks(np.arange(0, 11, 2))
 
@@ -190,7 +190,7 @@ def update_layer_of_neurons_using_slope_activation_point(\
 
 
 def plot_loss_landscape_with_state(loss_fn, output_vector, states=None, window_size=10, tangent=None, \
-                                   show_legend=True, figsize=(5,3)):
+                                   show_legend=True, figsize=(5,3), limit_y_axis=True):
     import matplotlib.pyplot as plt 
     import matplotlib.cm as cm 
     # ignore warnings
@@ -212,13 +212,14 @@ def plot_loss_landscape_with_state(loss_fn, output_vector, states=None, window_s
 
     if tangent is not None:
         # tangent = slope
-        tangent_line = tangent['slope'] * y_pred_around_output + (tangent['loss'] - tangent['slope'] * tangent['prediction'])
+        tangent_line = tangent['output_error_signal'] * y_pred_around_output + (tangent['loss'] - tangent['output_error_signal'] * tangent['prediction'])
         plt.plot(y_pred_around_output, tangent_line, color="gray", \
-                 linestyle="--", label=r'$\delta_{out}$' + '={:.2f}'.format(tangent['slope']))
+                 linestyle="--", label=r'$\delta_{out}$' + '={:.2f}'.format(tangent['output_error_signal']))
     
     min_values_to_plot = min(loss_values)*0.9 - 0.1 * (max(loss_values) - min(loss_values))
     max_values_to_plot = max(loss_values)*1.1 + 0.1 * (max(loss_values) - min(loss_values))
-    plt.ylim(min_values_to_plot, max_values_to_plot)
+    if limit_y_axis:
+        plt.ylim(min_values_to_plot, max_values_to_plot)
     if show_legend:
         plt.legend()
         
@@ -304,4 +305,31 @@ def train_multiple_times(model, x_train, y_train, x_test, n_runs=15):
         predictions = evaluate_model(trained_model, x_test_standardized)
         all_predictions.append(predictions * y_sample_std + y_sample_mean)
     return np.array(all_predictions)
+
+
+### Train utils 
+
+def relu_derivative(z):
+    return np.where(z > 0, 1, 0).squeeze()
+
+def sigmoid_derivative(z):
+    sigmoid_output = activation_function(z, function_type='sigmoid')
+    return (sigmoid_output * (1 - sigmoid_output)).squeeze()
+def tanh_derivative(z):
+    tanh_output = activation_function(z, function_type='tanh')
+    return (1 - tanh_output ** 2).squeeze()
+def linear_derivative(z):
+    return np.ones_like(z).squeeze()
+
+def activation_function_derivative(z, function_type):
+    if function_type == 'relu':
+        return relu_derivative(z)
+    elif function_type == 'linear':
+        return linear_derivative(z)
+    elif function_type == 'sigmoid':
+        return sigmoid_derivative(z)
+    elif function_type == 'tanh':
+        return tanh_derivative(z)
+    else:
+        raise ValueError("Unsupported activation function for derivative.")
     
