@@ -21,6 +21,7 @@ dependencies:
       - transformers
       - datasets
       - tabulate
+      - netgraph
       
 
   
