@@ -3,9 +3,9 @@
 
 ## Welcome to the AI44Nanobiology course! 
 
-Here you will find the Jupyter Notebooks used in the course NB4170, AI4Nanobiology. 
+Here you will find the Jupyter Notebooks used in the course NB4170 – AI4Nanobiology. 
 
-## How to use? 
+## How to use 
 
 1) Local computer 
 There are several options that you can use to access the notebooks and run them. The file environment.yml contains the dependencies that you need to install to run the notebooks in your local machine. If you have conda installed, you can create a new environment with the following command: 
@@ -13,7 +13,7 @@ There are several options that you can use to access the notebooks and run them.
 ```bash
 conda env create -f environment.yml
 ```
-This will create a new environment called _ai4bio_ which you can use to run the notebooks. 
+This will create a new environment called `ai4bio` which you can use to run the notebooks. 
 
 2) Binder
 Alternately, you can also use Binder to run the notebooks without installing anything. Simply click the badge below to launch an instance of JupyterLab in your browser, where you can access and run the notebooks.
