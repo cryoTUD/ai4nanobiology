@@ -135,7 +135,7 @@ def update_layer_of_neurons_using_slope_activation_point(\
     y_3_global = activation_function(z_3_global, function_type=function_type)
 
     combined_output = weight_1 * y_1_global + weight_2 * y_2_global + weight_3 * y_3_global + output_bias
-    x_global_true = np.linspace(0, 1, 1000)
+    x_global_true = np.linspace(0, 10, 1000)
     y_1_global_true = activation_function(slope_1 * x_global_true + bias_1, function_type=function_type)
     y_2_global_true = activation_function(slope_2 * x_global_true + bias_2, function_type=function_type)
     y_3_global_true = activation_function(slope_3 * x_global_true + bias_3, function_type=function_type)
