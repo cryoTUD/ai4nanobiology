@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 
-def upload_to_surfdrive(file_path, student_id):
+def upload_to_surfdrive(file_path, name, student_id):
     # upload the model to surfdrive 
     import os
     import requests
@@ -19,7 +19,7 @@ def upload_to_surfdrive(file_path, student_id):
     # Build a unique remote filename so submissions don't collide
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     original_name = os.path.basename(file_path)
-    remote_name = f"{student_id}_{timestamp}_{original_name}"
+    remote_name = f"{name}_{student_id}_{timestamp}_{original_name}"
     
     # WebDAV upload endpoint — filename goes in the URL
     upload_url = f"https://surfdrive.surf.nl/public.php/webdav/{remote_name}"
