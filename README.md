@@ -27,15 +27,19 @@ We have also set up a DelftBlue environment for the course. If you are enrolled 
 
 [Open OnDemand](https://login.delftblue.tudelft.nl) is probably the easiest way to access DelftBlue, but you may have to wait in a queue to get access to the environment. 
 
+The first time you login to DelftBlue, your home directory will not be created. In that case, click on "Open Shell" which takes you to a login page. Type your netid password (for your privacy, when you type the password you will not see anything change in the terminal, not even asterisk *. This is normal for terminal access)
+
+Once you login, your home directory will be created. You can logout and go back to the [Open OnDemand](https://login.delftblue.tudelft.nl) web portal. Reload the page. You can then continue with the later steps. 
+
 Using the Cluster Shell Access (Clusters > DelftBlue Cluster Shell Access)
 - Setup the environment: 
 ```bash
 source /projects/nb4170/setup_nb4170.sh
 ```
 
-Then go to Interactive Apps > JupyterLab and start a new session. Set the runtime to 2 hours. Under additional module type 
+Then go to Interactive Apps > JupyterLab and start a new session. Change the partition to *compute-p1*. Set the runtime to 3 hours or less. Under additional module type 
 ```bash
-cuda, miniforge3
+miniforge3
 ```
 For container file, select PyTorch
 
