@@ -13,6 +13,11 @@ from torchvision import datasets, transforms
 # ============================================================
 # Data loading
 # ============================================================
+def set_seed(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 def get_subset(dataset, fraction, seed, batch_size):
     """Deterministic random subset selection."""
@@ -33,8 +38,9 @@ def get_cifar10_loaders(batch_size=128, val_fraction=0.1, train_subset_size=None
       (useful for inducing overfitting deliberately).
     """
     transform = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),  # CIFAR-10 mean/std
+        transforms.Normalize((0.5,), (0.5,)),  # CIFAR-10 grayscale mean/std
     ])
 
     train_full = datasets.CIFAR10(root=data_root, train=True,  download=True, transform=transform)
