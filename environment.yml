@@ -16,12 +16,15 @@ dependencies:
   - pip:
       - ipykernel
       - ipywidgets
+      - ipysheet
       - huggingface_hub
       - pyarrow
       - transformers
       - datasets
       - tabulate
       - netgraph
+      - mrcfile
+      
       
 
   
