@@ -8,3 +8,6 @@ week_2/*.png
 week_2/*.py
 week_2/temp/*
 *__pycache__
+*.DS_Store
+*.pt
+*.pkl
