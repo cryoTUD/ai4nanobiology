@@ -12,6 +12,8 @@ import mrcfile
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
 from scipy.signal.windows import gaussian
 from scipy.signal import convolve2d
 from skimage.color import rgb2gray
@@ -29,8 +31,8 @@ from ipywidgets import (
     IntSlider,
     fixed,
     interact_manual,
+    HBox, VBox, Layout, Output, Label
 )
-
 
 
 # functions
@@ -362,7 +364,7 @@ def get_timings_convolution_theorem(Image, kerneltype, size):
 
 
 
-def slide_kernel_over_image(image, size=15):
+def slide_kernel_over_image(image, user_kernel=None, size=15):
     """
     Interactive demo: pick a kernel, slide it over `image`, and watch the
     dot product (= one pixel of the convolution output) update live.
@@ -383,6 +385,7 @@ def slide_kernel_over_image(image, size=15):
         "Horizontal edge (Sobel y)": sy,
         "Gaussian blur":             gaussian_blur(size),
         "Sharpen":                   sharpen(size),
+        "User kernel":                user_kernel if user_kernel is not None else np.zeros((size, size)),
     }
 
     H, W = image.shape[:2]
@@ -390,6 +393,7 @@ def slide_kernel_over_image(image, size=15):
     normalize = lambda x: (x - x.min()) / (x.max() - x.min() + 1e-9)
     image = normalize(image)
     
+    default_kernel_name = "Gaussian blur" if user_kernel is None else "User kernel"
     def update(kernel_name, x, y):
         # get full convolution by convolving the whole image with the kernel without scipy 
         full_convolution = np.zeros_like(image)
@@ -453,8 +457,106 @@ def slide_kernel_over_image(image, size=15):
     return interact(
         update,
         kernel_name=Dropdown(options=list(kernels.keys()),
-                             value="Gaussian blur",
+                             value=default_kernel_name,
                              description="Kernel"),
         x=IntSlider(description="x", min=half, max=W - half - 1, value=W // 2),
         y=IntSlider(description="y", min=half, max=H - half - 1, value=H // 2),
     )
+
+def get_pixel_values(Image, box=8):
+    """
+    Interactive pixel-patch viewer.
+
+    Layout:
+            X slider (horizontal, on top)
+        ┌────────────────────┐ ┌───┐  ┌──────────────┐
+        │                    │ │   │  │              │
+        │       image        │ │ Y │  │ pixel table  │
+        │                    │ │   │  │              │
+        └────────────────────┘ └───┘  └──────────────┘
+
+    The Y slider is rotated 180° so that 0 is at the top and H is at the
+    bottom -- matching image-coordinate convention (row 0 = top row).
+    """
+    H, W = Image.shape[:2]
+    half = box // 2
+
+    # X slider: horizontal, above the image
+    x_slider = IntSlider(
+        value=W // 2, min=half, max=W - half - 1,
+        continuous_update=True, orientation="horizontal",
+        readout=True,
+        layout=Layout(width="250px"),
+    )
+    x_label = Label(f"X: {x_slider.value}")
+    x_slider.observe(lambda c: setattr(x_label, "value", f"X: {c['new']}"),
+                     names="value")
+
+    # Y slider: vertical, rotated 180° so the visual top corresponds to y=0.
+    # The description and readout both rotate with the slider, so we hide
+    # them and use a separate Label above the slider instead.
+    y_slider = IntSlider(
+        value=H // 2, min=half, max=H - half - 1,
+        continuous_update=True, orientation="vertical",
+        readout=False,
+        layout=Layout(height="500px", transform="rotate(90deg)"),
+    )
+    y_label = Label(f"Y: {y_slider.value}")
+    y_slider.observe(lambda c: setattr(y_label, "value", f"Y: {c['new']}"),
+                     names="value")
+
+    image_out = Output()
+    table_out = Output()
+
+    def redraw(*_):
+        x, y = x_slider.value, y_slider.value
+        i0, i1 = y - half, y + half
+        j0, j1 = x - half, x + half
+        y = H - 1 - y  # flip y to match image coordinates (row 0 = top row)
+        # Image panel
+        with image_out:
+            image_out.clear_output(wait=True)
+            fig, ax = plt.subplots(figsize=(5, 5))
+            ax.imshow(Image, cmap="gray")
+            ax.add_patch(patches.Rectangle(
+                (j0 - 0.5, i0 - 0.5), box, box,
+                fill=False, edgecolor="yellow", linewidth=2,
+            ))
+            ax.set_title(f"Patch at (x={x}, y={y})")
+            ax.axis("off")
+            plt.show()
+            plt.close(fig)
+
+        # Pixel-value table
+        with table_out:
+            table_out.clear_output(wait=True)
+            patch = Image[i0:i1, j0:j1]
+            df = pd.DataFrame(
+                patch,
+                index=[f"y={i}" for i in range(i0, i1)],
+                columns=[f"x={j}" for j in range(j0, j1)],
+            )
+            fmt = "{:d}" if np.issubdtype(patch.dtype, np.integer) else "{:.2f}"
+            vmin = float(np.min(Image)); vmax = float(np.max(Image))
+            styled = (
+                df.style
+                  .background_gradient(cmap="gray", vmin=vmin, vmax=vmax)
+                  .format(fmt)
+                  .set_properties(**{"text-align": "center",
+                                     "font-size": "11px",
+                                     "border": "1px solid #ddd",
+                                     "padding": "4px"})
+            )
+            display(styled)
+
+    x_slider.observe(redraw, names="value")
+    y_slider.observe(redraw, names="value")
+
+    # Compose layout
+    x_panel = VBox([x_label, x_slider])                      # X label + slider on top
+    y_panel = VBox([y_label, y_slider])                      # Y label + rotated slider
+    image_panel = VBox([x_panel, HBox([image_out, y_panel])])
+    ui = HBox([image_panel, table_out])
+
+    redraw()
+    return ui
