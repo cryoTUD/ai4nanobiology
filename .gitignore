@@ -7,3 +7,4 @@ week_2/*.json
 week_2/*.png
 week_2/*.py
 week_2/temp/*
+*__pycache__
