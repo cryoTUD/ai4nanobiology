@@ -14,6 +14,46 @@ from torchvision import datasets, transforms
 # Data loading
 # ============================================================
 
+def get_subset(dataset, fraction, seed, batch_size):
+    """Deterministic random subset selection."""
+    rng = np.random.default_rng(seed)
+    n = int(len(dataset) * fraction)
+    idx = rng.choice(len(dataset), n, replace=False)
+    subset_train = Subset(dataset, idx.tolist())
+    train_loader = DataLoader(subset_train, batch_size=batch_size, shuffle=True, num_workers=0)
+    return  train_loader
+
+def get_cifar10_loaders(batch_size=128, val_fraction=0.1, train_subset_size=None,
+                        data_root="./data", seed=0):
+    """
+    Returns (train_loader, val_loader, test_loader) for CIFAR-10.
+    - CIFAR-10 has 50,000 train + 10,000 test by default.
+    - We carve `val_fraction` of the training set into a validation set.
+    - If `train_subset_size` is given, we use only that many training examples
+      (useful for inducing overfitting deliberately).
+    """
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),  # CIFAR-10 mean/std
+    ])
+
+    train_full = datasets.CIFAR10(root=data_root, train=True,  download=True, transform=transform)
+    test_set   = datasets.CIFAR10(root=data_root, train=False, download=True, transform=transform)
+    # Optional shrink BEFORE the val split, so val stays a clean held-out set
+    if train_subset_size is not None:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(len(train_full), train_subset_size, replace=False).tolist()
+        train_full = Subset(train_full, idx)
+    n_val = int(len(train_full) * val_fraction)
+    n_train = len(train_full) - n_val
+    generator = torch.Generator().manual_seed(seed)
+    train_set, val_set = random_split(train_full, [n_train, n_val], generator=generator)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True,  num_workers=0)
+    val_loader   = DataLoader(val_set,   batch_size=batch_size, shuffle=False, num_workers=0)
+    test_loader  = DataLoader(test_set,  batch_size=batch_size, shuffle=False, num_workers=0)
+    return train_loader, val_loader, test_loader
+
+
 def get_mnist_loaders(batch_size=128, val_fraction=0.1, train_subset_size=None,
                      data_root="./data", seed=0):
     """
@@ -53,16 +93,27 @@ def get_mnist_loaders(batch_size=128, val_fraction=0.1, train_subset_size=None,
 # ============================================================
 # Visualization
 # ============================================================
+def normalise_for_display(a):
+    return (a - a.min()) / (a.max() - a.min() + 1e-8)
 
-def show_examples(loader, n=12, title="MNIST examples"):
+def show_examples(loader, n=12, title="MNIST examples", classes=None):
     """Display n example images with their class labels."""
     x, y = next(iter(loader))
     n = min(n, x.size(0))
     fig, axes = plt.subplots(2, n // 2, figsize=(n * 0.9, 2.5))
     for i, ax in enumerate(axes.flat):
         img = x[i].squeeze().numpy()
+
+        if img.ndim == 3:
+            img = img.transpose(1, 2, 0)
+        img = normalise_for_display(img)
         ax.imshow(img, cmap="gray")
-        ax.set_title(f"label: {int(y[i])}", fontsize=9)
+        if classes is not None:
+            label = classes[int(y[i])]
+            title_text = f"{label} ({int(y[i])})"
+            ax.set_title(title_text, fontsize=9)
+        else:
+            ax.set_title(f"label: {int(y[i])}", fontsize=9)
         ax.axis("off")
     plt.suptitle(title)
     plt.tight_layout()
@@ -183,9 +234,9 @@ def preprocess_drawn_digit(image_array_or_path, invert=True):
     return tensor
 
 
-def predict_drawn_digit(model, image_input, device):
+def predict_drawn_digit(model, image_input, device, invert_input=True):
     """Run a hand-drawn digit through the trained model. Returns (pred, probs)."""
-    tensor = preprocess_drawn_digit(image_input).to(device)
+    tensor = preprocess_drawn_digit(image_input, invert=invert_input).to(device)
     model.eval()
     with torch.no_grad():
         logits = model(tensor)
@@ -194,9 +245,9 @@ def predict_drawn_digit(model, image_input, device):
     return pred, probs
 
 
-def show_drawn_digit_prediction(image_input, pred, probs):
+def show_drawn_digit_prediction(image_input, pred, probs, invert_input=True):
     """Visualize the drawn digit and the model's class probabilities."""
-    tensor = preprocess_drawn_digit(image_input)
+    tensor = preprocess_drawn_digit(image_input, invert=invert_input)
     img = tensor.squeeze().numpy()
 
     fig, axes = plt.subplots(1, 2, figsize=(8, 3))
@@ -279,3 +330,49 @@ def make_drawing_canvas(size=200):
         canvas.fill_rect(0, 0, size, size)
 
     return canvas, get_image, clear
+
+
+
+def upload_to_surfdrive(**variables):
+    # upload the model to surfdrive 
+    import os
+    import requests
+    from datetime import datetime
+
+    name = input("Enter your name (for the filename): ").strip()
+    student_id = input("Enter your student ID (for the filename): ").strip()
+
+    # upload all variables to a temporary pickle file
+    import pickle
+    file_path = "submission.pkl"
+    with open(file_path, "wb") as f:
+        pickle.dump(variables, f)
+        
+    """Upload a file to a SURFdrive file-drop share."""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+    surfdrive_link = "https://surfdrive.surf.nl/s/cxQ74XXfRXCKkZJ"
+
+    # Extract share token from the link (the last path segment)
+    share_token = surfdrive_link.rstrip("/").split("/")[-1]
+    
+    # Build a unique remote filename so submissions don't collide
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    original_name = os.path.basename(file_path)
+    remote_name = f"{name}_{student_id}_{timestamp}_{original_name}"
+    
+    # WebDAV upload endpoint — filename goes in the URL
+    upload_url = f"https://surfdrive.surf.nl/public.php/webdav/{remote_name}"
+    
+    with open(file_path, 'rb') as f:
+        response = requests.put(
+            upload_url,
+            data=f,                              # raw bytes, NOT files=
+            auth=(share_token, ""),  # token as username
+        )
+    
+    if response.status_code in (200, 201, 204):
+        print(f"✓ Uploaded as: {remote_name}")
+    else:
+        print(f"✗ Upload failed (HTTP {response.status_code})")
+        print(f"  Response: {response.text[:300]}")
