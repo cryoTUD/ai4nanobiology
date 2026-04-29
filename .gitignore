@@ -1,3 +1,13 @@
 *.pyc
 week_1/src/models/retrained_models/*
 week_6/try_gpt2.py
+week_2/data/*
+week_2/MUTAG/*
+week_2/*.json
+week_2/*.png
+week_2/*.py
+week_2/temp/*
+*__pycache__
+*.DS_Store
+*.pt
+*.pkl
