@@ -9,6 +9,7 @@ dependencies:
   - matplotlib
   - pandas=2.3.3
   - scikit-learn
+  - scikit-image
   - seaborn
   - pytorch
   - torchvision
