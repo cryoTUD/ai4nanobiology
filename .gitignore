@@ -11,3 +11,5 @@ week_2/temp/*
 *.DS_Store
 *.pt
 *.pkl
+week_3/*.pdb
+week_3/iframe_figures
