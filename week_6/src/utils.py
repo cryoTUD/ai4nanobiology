@@ -20,7 +20,7 @@ def setup_client():
     try:
         r = requests.get(PROXY_URL, timeout=10)
         r.raise_for_status()
-        print("✅ Connected to TUDelft LLM proxy")
+        print("✅ Connected to cryotud-nb4170-llm-proxy!")
     except Exception as e:
         print(f"❌ Could not reach proxy: {e}")
         print("   Ask your instructor — the proxy may be sleeping.")
