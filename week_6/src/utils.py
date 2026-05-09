@@ -15,7 +15,7 @@
 def setup_client():
     """Returns the proxy URL. Replaces the old InferenceClient setup."""
     # Verify the proxy is alive
-    PROXY_URL = "https://alokbharadwaj-llm-uncertainty.hf.space"
+    PROXY_URL = "https://cryotud-nb4170-llm-proxy.hf.space"
     import requests
     try:
         r = requests.get(PROXY_URL, timeout=10)
