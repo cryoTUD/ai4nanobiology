@@ -51,12 +51,12 @@ class EntailmentDeberta:
         Checks wether text1 entails text2 
         (example is unused here)
         '''
+        combined_text = f"{text1} {self.tokenizer.sep_token} {text2}"
         # tokenization step
         inputs = self.tokenizer(
-            text1,
-            text2,
+            combined_text,
             return_tensors="pt",
-            truncation=True
+            truncation=True,
         ).to(DEVICE)
 
         outputs = self.model(**inputs) # calls the deberta mnli model and runs a forward pass based on the inputs
@@ -181,5 +181,3 @@ def LLM_get_semantic_ids(strings_list, sub_question, MODEL_NAME, strict_entailme
     return semantic_ids
 
     
-
-
