@@ -757,3 +757,41 @@ def interactive_attention_with_output(e1=None, e2=None, W_q=None, W_k=None, W_v=
         widgets.HBox([widgets.HTML("<b style='color:#0f766e'>W_O</b>"), osl]),
     ])
     display(widgets.HBox([sliders, mat_box]), out)
+
+def search_word_in_proteome(word, context=5, fasta_file="human_proteome.fasta"):
+    word = word.upper()
+
+    invalid = [c for c in word if c in "BJOXZ"]
+    if invalid:
+        print(f"Invalid letters {invalid} — not in the amino acid alphabet.")
+        return
+
+    with open(fasta_file, "r") as f:
+        fasta_text = f.read()
+
+    entries = fasta_text.strip().split(">")[1:]
+
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+
+    found = []
+    for entry in entries:
+        lines = entry.strip().split("\n")
+        header = lines[0]
+        seq = "".join(lines[1:])
+        if word in seq:
+            acc = header.split("|")[1] if "|" in header else header.split()[0]
+            name = header.split("|")[2].split(" OS=")[0] if "|" in header else header
+            pos = seq.find(word)
+            snippet = f"...{seq[max(0, pos-context):pos]}{BOLD}{word}{RESET}{seq[pos+len(word):pos+len(word)+context]}..."
+            found.append((acc, name, pos + 1, snippet))
+
+    if not found:
+        print(f"No proteins found containing '{word}'.")
+        return
+
+    print(f"\nFound {len(found)} protein(s) containing '{word}':\n")
+    for acc, name, pos, snippet in found:
+        print(f"  {acc}  {name}")
+        print(f"  Position: {pos},  context: {snippet}")
+        print(f"  https://www.uniprot.org/uniprotkb/{acc}\n")
