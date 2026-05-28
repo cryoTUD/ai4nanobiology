@@ -30,6 +30,9 @@ def tokenise_pdb_for_esm(pdb_path, model_name="facebook/esm2_t6_8M_UR50D",
       aligning attention to a residue-level contact map.
     """
     import os
+    os.environ["HF_HOME"] = "/projects/nb4170/esm_models"
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
     from Bio.PDB import PDBParser, MMCIFParser
     from Bio.PDB.Polypeptide import is_aa
     from Bio.Data.IUPACData import protein_letters_3to1_extended as _3to1
@@ -70,7 +73,7 @@ def tokenise_pdb_for_esm(pdb_path, model_name="facebook/esm2_t6_8M_UR50D",
         raise ValueError(f"No amino-acid residues found in chain {chosen.id!r}.")
 
     # ---- tokenise for ESM-2 ----
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
     enc = tokenizer(sequence, return_tensors="pt")
     tokens = tokenizer.convert_ids_to_tokens(enc["input_ids"][0])
 
@@ -183,12 +186,17 @@ def display_heatmap(array, tokenised_pdb=None, cmap="turbo"):
     plt.xlabel("Key positions")
     plt.ylabel("Query positions")
 
-def display_heatmaps(list_of_arrays, tokenised_pdb=None, cmap="turbo"):
+
+def display_heatmaps(list_of_arrays, tokenised_pdb=None, cmap="turbo", titles=None):
     import matplotlib.pyplot as plt
     n = len(list_of_arrays)
     fig, axes = plt.subplots(1, n, figsize=(5*n, 5))
     for i, array in enumerate(list_of_arrays):
         plt.sca(axes[i])
         display_heatmap(array, tokenised_pdb=tokenised_pdb, cmap=cmap)
+        if titles is not None:
+            axes[i].set_title(titles[i])
+    
+    fig.tight_layout()
     
     
