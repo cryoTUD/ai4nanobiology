@@ -26,6 +26,7 @@ dependencies:
       - tabulate
       - netgraph
       - mrcfile
+      - tiktoken
       - graphein
       - plotly
       - torch_geometric==2.7
