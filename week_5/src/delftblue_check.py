@@ -10,7 +10,7 @@ def try_to_import(module_name):
 
 def check_imports():
     modules_to_check = [
-        "numpy", "pandas", "torch", "torch_geometric",
+        "numpy", "pandas", "torch", "transformers", "tiktoken",
         "gemmi", "plotly", "graphein", "matplotlib",
     ]
     failures = []
@@ -53,6 +53,7 @@ def check_files_are_readable():
     if not check_path(ESM_FOLDER):
         print("  ESM folder missing.")
         return False
+    return True
 
 def check_folder_is_writable(folder_path):
     from datetime import datetime
