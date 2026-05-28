@@ -1,6 +1,25 @@
 import numpy as np 
 import torch
 import torch.nn as nn
+import base64
+
+def get_bpe_encoder(bpe_path):
+    import tiktoken
+    bpe_ranks = {}
+    with open(bpe_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                token_b64, rank_str = line.split()
+                bpe_ranks[base64.b64decode(token_b64)] = int(rank_str)
+
+    enc = tiktoken.Encoding(
+        name="gpt2_offline",
+        pat_str=r"""'(?:[ sdmt]|ll|ve|re)| ?\p{L}++| ?\p{N}++| ?[^\s\p{L}\p{N}]++|\s++$|\s+(?!\S)|\s""",
+        mergeable_ranks=bpe_ranks,
+        special_tokens={"<|endoftext|>": 50256}
+    )
+
+    return enc
 
 class SelfAttentionHead(nn.Module):
     def __init__(self, d_input, d_model,
