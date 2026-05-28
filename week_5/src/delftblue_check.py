@@ -47,11 +47,11 @@ def check_gpu_available():
         return False
     
 def check_files_are_readable():
-    GNN_DATA_FOLDER = "/projects/nb4170/week_5/saved_models/"
+    ESM_FOLDER = "/projects/nb4170/esm_models"
 
     # Check the root folder first
-    if not check_path(GNN_DATA_FOLDER):
-        print("  Root data folder missing. Skipping further checks.")
+    if not check_path(ESM_FOLDER):
+        print("  ESM folder missing.")
         return False
 
 def check_folder_is_writable(folder_path):
@@ -88,10 +88,12 @@ def check_everything():
 
     print("\nChecking output folder writability...")
     output_folder = "/projects/nb4170/week_5/tinyLMs/"
+    output_folder_pLM = "/projects/nb4170/protein_language_models"
     output_ok = check_folder_is_writable(output_folder)
+    output_ok_pLM = check_folder_is_writable(output_folder_pLM)
 
     print("\n" + "="*40)
-    if imports_ok and files_ok and output_ok and gpu_ok:
+    if imports_ok and files_ok and output_ok and gpu_ok and output_ok_pLM:
         print("All checks passed. You're ready to go.")
     else:
         print("Some checks failed. See messages above.")
