@@ -8,7 +8,7 @@ def setup_client():
     try:
         r = requests.get(PROXY_URL, timeout=10)
         r.raise_for_status()
-        print("✅ Connected to TUDelft LLM proxy")
+        print("✅ Connected to NB4170 LLM proxy")
     except Exception as e:
         print(f"❌ Could not reach proxy: {e}")
         print("   Ask your instructor — the proxy may be sleeping.")
@@ -50,3 +50,45 @@ def prob_to_color(avg_prob):
     b = 0
     
     return f"{r:02x}{g:02x}{b:02x}"
+
+def query_model(prompt, model_name, max_tokens, client, system_prompt=""):
+    """Send one prompt to the proxy and return the model's response.
+
+    Parameters
+    ----------
+    prompt        : str   the user prompt (the question or batch of questions)
+    model_name    : str   "llama-1b", or "llama-8b" 
+    max_tokens    : int   how many tokens to generate
+    client        : str   proxy URL from setup_client()
+    system_prompt : str   optional system instruction
+
+    Returns
+    -------
+    dict with keys:
+        "answer"      : str   the generated text
+        "logprobs"    : dict  {token: logprob}
+        "token_probs" : dict  {token: probability}
+        "logprob_contents" : list of dictionaries for each generated token[{}]
+    or None if the request was rate-limited / rejected.
+    """
+    import requests 
+    response = requests.post(
+        f"{client}/generate",
+        json={
+            "system_prompt": system_prompt,
+            "prompt": prompt,
+            "model": model_name,
+            "max_tokens": max_tokens,
+        },
+        timeout=60,
+    )
+
+    if response.status_code == 429:
+        print("Rate limit hit - wait a moment and try again.")
+        return None
+    if response.status_code == 400:
+        print(f"Bad request: {response.json().get('detail')}")
+        return None
+
+    response.raise_for_status()
+    return response.json()
