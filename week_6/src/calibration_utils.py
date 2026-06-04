@@ -58,6 +58,118 @@ def parse_single_letter(text):
     match = re.search(r"\b([ABCD])\b", text.strip().upper())
     return match.group(1) if match else None
 
+def batch_questions(df, batch_size):
+    """Split df into batches; each batch is (prompt_string, {qnum: correct_letter})."""
+    prompts, answer_keys = [], []
+    for start in range(0, len(df), batch_size):
+        batch = df.iloc[start:start + batch_size]
+        header = (
+            f"Answer the following {len(batch)} multiple choice questions.\n"
+            "For each question, answer with the question number followed by a "
+            "letter (A, B, C, or D) and nothing else.\n\n"
+        )
+        body = ""
+        key = {}
+        for local_i, (_, row) in enumerate(batch.iterrows(), start=1):
+            option_lines = [f"{letter}. {text}"
+                            for letter, text in zip("ABCD", row["choices"])]
+            body += f"{local_i}: {row['question']}\n" + "\n".join(option_lines) + "\n\n"
+            key[local_i] = ANSWER_MAP[row["answer"]]
+        prompts.append(header + body)
+        answer_keys.append(key)
+    return prompts, answer_keys
+
+SYSTEM_PROMPT = """You are an answer key. You receive multiple choice questions and output only the answers.
+
+RULES:
+- Output one line per question.
+- Each line is exactly: the question number, a colon, a space, and a single capital letter (A, B, C, or D).
+- Output nothing else: no explanations, no restating the question, no extra words, no blank lines, no markdown.
+- Answer every question. If unsure, still pick the single most likely letter.
+
+EXAMPLE REPLY (for 3 questions):
+1: A
+2: C
+3: B
+"""
+
+def parse_batched_answers(text):
+    """Parse 'N: X' lines into {N: 'X'} keeping only valid A-D letters."""
+    answers = {}
+    for line in text.strip().splitlines():
+        m = re.match(r"\s*(\d+)\s*[:.]\s*([ABCD])", line.strip().upper())
+        if m:
+            answers[int(m.group(1))] = m.group(2)
+    return answers
+
+def score_batch(parsed, answer_key, verbose=False):
+    """Return accuracy of one parsed batch against its answer key."""
+    correct = 0
+    for qnum, gold in answer_key.items():
+        got = parsed.get(qnum)
+        if got == gold:
+            correct += 1
+        if verbose:
+            mark = "OK" if got == gold else " X"
+            print(f"{mark}\tQ{qnum}: correct={gold}, model={got}")
+    return correct / len(answer_key)
+
+def evaluate_dataset_batched(df, model_name, client, batch_size=10, system_prompt=SYSTEM_PROMPT,
+                             max_tokens=200, pause=0.5):
+    from tqdm import tqdm
+    import time
+    prompts, answer_keys = batch_questions(df, batch_size=batch_size)
+    n_correct, n_total = 0, 0
+    for prompt, key in tqdm(list(zip(prompts, answer_keys)), desc="Batches"):
+        res = query_model(prompt, model_name, max_tokens=max_tokens,
+                          client=client, system_prompt=system_prompt)
+        time.sleep(pause)  # be gentle on the shared rate limit
+        if res is None:
+            continue
+        parsed = parse_batched_answers(res["answer"])
+        for qnum, gold in key.items():
+            n_total += 1
+            if parsed.get(qnum) == gold:
+                n_correct += 1
+    return n_correct / n_total if n_total else 0.0
+
+def parse_batched_answers_with_token_prob(batch_result):
+    parsed_answers = {}
+    for item in batch_result["logprobs_content"]:
+        token = item['token'].strip()
+        logprob = item['logprob']
+        if re.match(r"^\d+$", token):
+            current_question = int(token)
+        elif re.match(r"^[ABCD]$", token):
+            prob = np.exp(logprob)
+            parsed_answers[current_question] = (token, prob)
+    return parsed_answers
+
+def collect_confidences_batched(df, model_name, client, batch_size=10, system_prompt=SYSTEM_PROMPT,
+                                max_tokens=200, pause=0.5):
+    from tqdm import tqdm
+    import time
+    prompts, answer_keys = batch_questions(df, batch_size=batch_size)
+    rows = []
+    for prompt, key in tqdm(list(zip(prompts, answer_keys)), desc="Batches"):
+        res = query_model(prompt, model_name, max_tokens=max_tokens,
+                          client=client, system_prompt=system_prompt)
+        time.sleep(pause)
+        if res is None:
+            continue
+        parsed = parse_batched_answers_with_token_prob(res)
+        for qnum, gold in key.items():
+            if qnum in parsed:
+                letter, conf = parsed[qnum]
+                rows.append({
+                    "correct_answer": gold,
+                    "model_answer": letter,
+                    "is_correct": letter == gold,
+                    "confidence": min(conf, 1.0),
+                })
+    return pd.DataFrame(rows)
+
+
 def collect_confidences(df, model_name, client, max_questions=None, pause=0.4):
     """One call per question. Returns a DataFrame with the model's answer,
     whether it was correct, and the probability it assigned to its answer letter."""
@@ -159,25 +271,10 @@ def load_subject(dataset_name, split="test"):
     path = f"{dataset_name}/{split}-00000-of-00001.parquet"
     return pd.read_parquet(BASE_URL + path)
 
-def calibration_for(dataset_name, model_name, n_bins=10, max_questions=None):
+def calibration_for(dataset_name, model_name, client, n_bins=10):
     """Full pipeline for one (subject, model): load -> query -> plot."""
     df = load_subject(dataset_name)
-    res_df = collect_confidences(df, model_name, max_questions=max_questions)
-    if len(res_df) == 0:
-        print(f"No results for {dataset_name} / {model_name}.")
-        return None
-    cal, ece = compute_calibration(res_df, n_bins=n_bins)
-    short = model_name.split("/")[-1]
-    plot_calibration(cal, ece,
-                     f"Calibration - {short}\n{dataset_name} "
-                     f"(N={len(res_df)}, acc={res_df['is_correct'].mean():.0%})")
-    return {"dataset": dataset_name, "model": model_name,
-            "n": len(res_df), "accuracy": res_df["is_correct"].mean(), "ece": ece}
-
-def calibration_for(dataset_name, model_name, client, n_bins=10, max_questions=None):
-    """Full pipeline for one (subject, model): load -> query -> plot."""
-    df = load_subject(dataset_name)
-    res_df = collect_confidences(df, model_name, client=client, max_questions=max_questions)
+    res_df = collect_confidences_batched(df, model_name, client=client)
     if len(res_df) == 0:
         print(f"No results for {dataset_name} / {model_name}.")
         return None
