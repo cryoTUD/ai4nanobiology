@@ -1,7 +1,7 @@
 # AI4Nanobiology
 ![NB4170 banner](./docs/NB4170_banner.png)
 
-## Welcome to the AI44Nanobiology course! 
+## Welcome to the AI4Nanobiology course! 
 
 Here you will find the Jupyter Notebooks used in the course NB4170 – AI4Nanobiology. 
 
