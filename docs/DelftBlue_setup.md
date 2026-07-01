@@ -64,6 +64,10 @@ We had the following structure for 2026.
 > [!TIP]
 > Students requested having a larger shared folder for their group projects. So in future it maybe nicer to have another shared folder: ```/projects/nb4170_projects``` only for student projects. You can have higher storage space for this, upto 1 TB.
   
+#### Setup file 
 
+We had one setup file stored at: ```/projects/nb4170/setup_nb4170.sh```. The setup file can be very useful to organise environment, code, and data. For the class of 2026, we let students copy each week's course material from the shared project directory. They ran the setup file at the start of each class through *Cluster Shell Access* on Open OnDemand web interface. This is a very flexible approach and allows you to adapt the course content each week. 
 
+> [!IMPORTANT]
+> As of 2026, the compute nodes do not have internet access. So if your course material requires connection to the internet you need to first download it yourself and store it at the shared folder. The setup file can be used to copy that material to the student's home directory.
 
