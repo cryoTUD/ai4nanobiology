@@ -40,8 +40,10 @@ There maybe [new ways](https://tudelft.topdesk.net/tas/public/ssp/content/servic
 For student projects, students submit SLURM scripts to make use of GPUs. They have access to all partition. Open OnDemand has web interface to submit jobs through web browser. You can find that [here](./submit_jobs_delftblue_openondemand.pdf). 
 
 ## Part 2: Setting up DelftBlue environments
-We had the following structure for 2026.
+<details>
+ <summary>Folder structure</summary>
 <img width="800" height="250" alt="image" src="https://github.com/user-attachments/assets/223c8a42-da17-412c-af91-8ef5290df183" />
+</details>
 
 - Shared project directory at: ```/projects/nb4170/``` which contained setup file, conda environments, code and data. Students have read access to this folder.
 - Create a shared conda environment that can be accessed by all students. Use the [ai4bio](../environment.yml) environment file from the repo. Navigate to the folder containing the environment file and run
