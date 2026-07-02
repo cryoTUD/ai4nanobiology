@@ -2,8 +2,17 @@
 ## Part 1: Getting access
 
 #### 1. You can request access for all students by raising a topdesk call [here](https://tudelft.topdesk.net/tas/public/ssp/content/serviceflow?unid=58cebc4f3e9b4e67b87ddd2b54bf1666)
-- Purpose: Students to access DelftBlue for the duration of a master course (NB4170) in Q4
-- Resources: Access to gpu-a100-small (or gpu-a100) and compute nodes. Compute nodes used for interactive jupyter notebook execution. GPUs for training a neural network using python scripts
+- Purpose:
+  
+  ```bash
+  Students to access DelftBlue for the duration of a master course (NB4170) in Q4
+  ```
+- Resources:
+
+  ```bash
+  Access to gpu-a100-small (or gpu-a100) and compute nodes. Compute nodes used for interactive jupyter notebook execution. GPUs for training a neural network using python scripts
+  ```
+  
 - Student list: Export from Brightspace. Go to Course Admin > Classlist > Select all > Export as CSV
 Upload the student list along with the request. All the students who are in the list will automatically get access to DelftBlue. This will create a new account ```education-as-courses-nb4170``` that can be used to access DelftBlue and submit jobs. 
 
@@ -11,7 +20,7 @@ Upload the student list along with the request. All the students who are in the 
 > Upload the student list atleast one week before the start of the course. It typically takes 2-3 business days for admins to process the request and add everyone to the group. Mention that in the course description so students do not enroll at the last moment. If that still happens (expect that) then you can send another list with the new students added to it in the same request. Plan week 1 so that it can be run on Binder.
 
 > [!CAUTION]
-> Special note: External students will need to go through some extra step (same holds true for instructors, and TA's from outside TU Delft). The following additional steps are required to ensure they can also access DelftBlue
+> External students will need to go through some extra step (same holds true for instructors, and TA's from outside TU Delft). The following additional steps are required to ensure they can also access DelftBlue
 
  <details>
 <summary>Request for external users to access DelftBlue</summary>
